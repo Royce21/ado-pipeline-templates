@@ -1,0 +1,20 @@
+parameters:
+- name: artifact_name
+  type: string
+  default: drop
+
+steps:
+- task: NodeTool@0
+  inputs: { versionSpec: '20.x' }
+- script: node -v && npm -v
+  displayName: Node Info
+- script: npm ci
+  displayName: Install
+- script: npm test --if-present
+  displayName: Test
+- script: npm run build --if-present
+  displayName: Build
+- publish: $(Build.SourcesDirectory)/dist
+  artifact: ${{ parameters.artifact_name }}
+  displayName: Publish artifact
+  condition: exists('dist')

@@ -1,0 +1,30 @@
+parameters:
+- name: app_type
+  type: string
+- name: vmImage
+  type: string
+- name: artifact_name
+  type: string
+- name: path_filter
+  type: object
+  default:
+    include: []
+    exclude: []
+
+stages:
+- stage: CI
+  displayName: Build & Test
+  jobs:
+  - job: build_test
+    pool: { vmImage: ${{ parameters.vmImage }} }
+    steps:
+    - checkout: self
+      fetchDepth: 0
+    - ${{ if eq(parameters.app_type, 'dotnet') }}:
+      - template: ../jobs/dotnet-build-test.yml
+        parameters:
+          artifact_name: ${{ parameters.artifact_name }}
+    - ${{ if eq(parameters.app_type, 'node') }}:
+      - template: ../jobs/node-build-test.yml
+        parameters:
+          artifact_name: ${{ parameters.artifact_name }}

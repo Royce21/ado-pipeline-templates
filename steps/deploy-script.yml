@@ -1,0 +1,14 @@
+parameters:
+- name: service_connection
+  type: string
+- name: env
+  type: string
+
+steps:
+- task: Bash@3
+  displayName: Deploy script
+  inputs:
+    targetType: inline
+    script: |
+      echo "Deploying to ${{ parameters.env }} ..."
+      # add your az/kubectl/terraform/helm commands here

@@ -1,0 +1,26 @@
+parameters:
+- name: artifact_name
+  type: string
+  default: drop
+
+steps:
+- task: UseDotNet@2
+  inputs: { packageType: 'sdk', version: '8.x' }
+- script: dotnet --info
+  displayName: .NET Info
+- script: dotnet restore
+  displayName: Restore
+- script: dotnet build --configuration Release --no-restore
+  displayName: Build
+- script: dotnet test --configuration Release --no-build --logger trx --results-directory $(Build.SourcesDirectory)/TestResults
+  displayName: Test
+- task: PublishTestResults@2
+  inputs:
+    testResultsFormat: VSTest
+    testResultsFiles: '**/*.trx'
+    searchFolder: '$(Build.SourcesDirectory)/TestResults'
+    failTaskOnFailedTests: true
+- publish: $(Build.SourcesDirectory)/dist
+  artifact: ${{ parameters.artifact_name }}
+  displayName: Publish artifact
+  condition: exists('dist')

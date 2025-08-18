@@ -1,0 +1,30 @@
+parameters:
+- name: env
+  type: string
+- name: vmImage
+  type: string
+- name: artifact_name
+  type: string
+- name: service_connection
+  type: string
+
+stages:
+- stage: CD
+  displayName: Deploy
+  dependsOn: CI
+  condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+                                 startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')))
+  jobs:
+  - deployment: deploy_${{ parameters.env }}
+    displayName: Deploy to ${{ parameters.env }}
+    environment: ${{ parameters.env }}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: ${{ parameters.artifact_name }}
+          - template: ../steps/deploy-script.yml
+            parameters:
+              service_connection: ${{ parameters.service_connection }}
+              env: ${{ parameters.env }}

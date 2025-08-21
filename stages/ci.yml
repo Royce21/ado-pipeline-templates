@@ -2,6 +2,8 @@
 parameters:
 - name: app_type
   type: string
+  # you can constrain if you want:
+  # values: [dotnet, node]
 - name: vmImage
   type: string
   default: 'ubuntu-latest'
@@ -17,25 +19,30 @@ stages:
 - stage: CI
   displayName: "Build & Test"
   variables:
-    vmImageName: ${{ parameters.vmImage }}   # <-- set once here
+    vmImageName: ${{ parameters.vmImage }}
   jobs:
-  - job: build_test
-    displayName: "Build and Test"
-    pool:
-      vmImage: $(vmImageName)                # <-- use the variable, not a template expr
-    steps:
-    - checkout: self
-      fetchDepth: 0
-
-    # Language-specific jobs
-    - ${{ if eq(parameters.app_type, 'dotnet') }}:
-       template: ../jobs/dotnet-build-test.yml
-       parameters:
+  # .NET CI job (included only if app_type == 'dotnet')
+  - ${{ if eq(parameters.app_type, 'dotnet') }}:
+    - job: dotnet_ci
+      displayName: "Build & Test (.NET)"
+      pool:
+        vmImage: $(vmImageName)
+      steps:
+      - checkout: self
+        fetchDepth: 0
+      - template: ../jobs/dotnet-build-test.yml
+        parameters:
           artifact_name: ${{ parameters.artifact_name }}
-          project_dir: $(Build.SourcesDirectory)/src/service-a     # ← adjust after you see the logged path
-          projects_glob: '**/*.sln'
-    - ${{ if eq(parameters.app_type, 'node') }}:
+
+  # Node CI job (included only if app_type == 'node')
+  - ${{ if eq(parameters.app_type, 'node') }}:
+    - job: node_ci
+      displayName: "Build & Test (Node)"
+      pool:
+        vmImage: $(vmImageName)
+      steps:
+      - checkout: self
+        fetchDepth: 0
       - template: ../jobs/node-build-test.yml
         parameters:
           artifact_name: ${{ parameters.artifact_name }}
-          project_dir: $(Build.SourcesDirectory)/packages/lib-xyz

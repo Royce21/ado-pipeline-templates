@@ -5,22 +5,33 @@ parameters:
 
 steps:
 - task: UseDotNet@2
-  inputs: { packageType: 'sdk', version: '8.x' }
-- script: dotnet --info
-  displayName: .NET Info
+  inputs:
+    packageType: 'sdk'
+    version: '8.x'
+
 - script: dotnet restore
   displayName: Restore
+
 - script: dotnet build --configuration Release --no-restore
   displayName: Build
+
 - script: dotnet test --configuration Release --no-build --logger trx --results-directory $(Build.SourcesDirectory)/TestResults
   displayName: Test
+
 - task: PublishTestResults@2
   inputs:
     testResultsFormat: VSTest
     testResultsFiles: '**/*.trx'
     searchFolder: '$(Build.SourcesDirectory)/TestResults'
     failTaskOnFailedTests: true
-- publish: $(Build.SourcesDirectory)/dist
-  artifact: ${{ parameters.artifact_name }}
+
+# Produce dist so publish always has something to send
+- script: dotnet publish --configuration Release --no-build -o $(Build.SourcesDirectory)/dist
+  displayName: Publish app to dist
+
+# Publish Pipeline Artifact (no exists() needed)
+- task: PublishPipelineArtifact@1
   displayName: Publish artifact
-  condition: exists('dist')
+  inputs:
+    targetPath: '$(Build.SourcesDirectory)/dist'
+    artifact: ${{ parameters.artifact_name }}

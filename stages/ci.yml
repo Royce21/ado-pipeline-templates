@@ -2,7 +2,7 @@
 parameters:
 - name: app_type
   type: string
-  # values: [dotnet, node]   # optional constraint
+  # values: [dotnet, node]   # optional
 - name: vmImage
   type: string
   default: 'ubuntu-latest'
@@ -18,11 +18,11 @@ stages:
 - stage: CI
   displayName: "Build & Test"
   variables:
-    vmImageName: ${{ parameters.vmImage }}   # compile-time -> variable
+    vmImageName: ${{ parameters.vmImage }}
     AppType:     ${{ parameters.app_type }}
 
   jobs:
-  # .NET job runs only when AppType == 'dotnet'
+  # .NET job (runs only if app_type == dotnet)
   - job: dotnet_ci
     displayName: "Build & Test (.NET)"
     condition: and(succeeded(), eq(variables['AppType'], 'dotnet'))
@@ -35,7 +35,7 @@ stages:
       parameters:
         artifact_name: ${{ parameters.artifact_name }}
 
-  # Node job runs only when AppType == 'node'
+  # Node job (runs only if app_type == node)
   - job: node_ci
     displayName: "Build & Test (Node)"
     condition: and(succeeded(), eq(variables['AppType'], 'node'))

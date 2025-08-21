@@ -37,3 +37,4 @@ stages:
       - template: ../jobs/node-build-test.yml
         parameters:
           artifact_name: ${{ parameters.artifact_name }}
+          project_dir: $(Build.SourcesDirectory)/packages/lib-xyz

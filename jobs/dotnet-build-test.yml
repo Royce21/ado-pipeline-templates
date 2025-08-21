@@ -3,12 +3,6 @@ parameters:
 - name: artifact_name
   type: string
   default: drop
-- name: project_dir                 # folder that contains your .sln/.csproj
-  type: string
-  default: $(Build.SourcesDirectory)
-- name: projects_glob               # '**/*.sln' or '**/*.csproj'
-  type: string
-  default: '**/*.sln'
 
 steps:
 - task: UseDotNet@2
@@ -17,40 +11,67 @@ steps:
     packageType: sdk
     version: 8.x
 
-# 🔎 Put the locator step RIGHT HERE (before Restore)
+# 🔎 Auto-detect a .sln (preferred) or a .csproj and expose variables
 - script: |
-    echo "Repo root: $(Build.SourcesDirectory)"
-    find "$(Build.SourcesDirectory)" -maxdepth 4 -type f \( -name "*.sln" -o -name "*.csproj" \) -print
-  displayName: Locate .NET projects
+    set -e
+    ROOT="$(Build.SourcesDirectory)"
+    echo "Repo root: $ROOT"
+    FOUND="$(find "$ROOT" -maxdepth 4 -type f -name '*.sln' | head -n1)"
+    if [ -z "$FOUND" ]; then
+      FOUND="$(find "$ROOT" -maxdepth 4 -type f -name '*.csproj' | head -n1)"
+    fi
+    if [ -z "$FOUND" ]; then
+      echo "##vso[task.logissue type=error]No .sln or .csproj found under $ROOT"
+      exit 1
+    fi
+    DIR="$(dirname "$FOUND")"
+    echo "Found: $FOUND"
+    echo "##vso[task.setvariable variable=DotProject]$FOUND"
+    echo "##vso[task.setvariable variable=DotProjDir]$DIR"
+  displayName: Locate .NET project/solution
 
+# Restore the detected solution/project
 - task: DotNetCoreCLI@2
   displayName: Restore
   inputs:
     command: restore
-    projects: ${{ parameters.projects_glob }}
-    workingDirectory: ${{ parameters.project_dir }}
+    projects: '$(DotProject)'
+    workingDirectory: '$(DotProjDir)'
 
+# Build the same solution/project
 - task: DotNetCoreCLI@2
   displayName: Build
   inputs:
     command: build
-    projects: ${{ parameters.projects_glob }}
+    projects: '$(DotProject)'
     arguments: '--configuration Release --no-restore'
-    workingDirectory: ${{ parameters.project_dir }}
+    workingDirectory: '$(DotProjDir)'
 
+# Run tests (search test csproj anywhere in repo)
 - task: DotNetCoreCLI@2
   displayName: Test
   inputs:
     command: test
-    projects: '**/*Tests/*.csproj'   # adjust if needed
+    projects: '**/*Tests/*.csproj'
     arguments: '--configuration Release --no-build --logger trx --results-directory $(Build.SourcesDirectory)/TestResults'
     publishTestResults: true
-    workingDirectory: ${{ parameters.project_dir }}
+    workingDirectory: '$(Build.SourcesDirectory)'
 
+# Publish: if solution -> publish all csproj under its dir; if csproj -> publish it
 - script: |
-    dotnet publish ${{ parameters.projects_glob }} --configuration Release --no-build -o $(Build.SourcesDirectory)/dist
+    set -e
+    mkdir -p "$(Build.SourcesDirectory)/dist"
+    if [[ "$(DotProject)" == *.sln ]]; then
+      echo "Publishing all projects under $(DotProjDir)"
+      find "$(DotProjDir)" -maxdepth 3 -type f -name '*.csproj' -print0 | while IFS= read -r -d '' P; do
+        echo "Publishing $P"
+        dotnet publish "$P" --configuration Release --no-build -o "$(Build.SourcesDirectory)/dist"
+      done
+    else
+      echo "Publishing $(DotProject)"
+      dotnet publish "$(DotProject)" --configuration Release --no-build -o "$(Build.SourcesDirectory)/dist"
+    fi
   displayName: Publish app to dist
-  workingDirectory: ${{ parameters.project_dir }}
 
 - task: PublishPipelineArtifact@1
   displayName: Publish artifact

@@ -1,37 +1,50 @@
+# jobs/dotnet-build-test.yml  (drop-in)
 parameters:
 - name: artifact_name
   type: string
   default: drop
+- name: project_dir
+  type: string
+  default: $(Build.SourcesDirectory)   # repo root or a subfolder
 
 steps:
 - task: UseDotNet@2
   inputs:
-    packageType: 'sdk'
-    version: '8.x'
+    packageType: sdk
+    version: 8.x
+  displayName: Use .NET 8
 
-- script: dotnet restore
+- task: DotNetCoreCLI@2
   displayName: Restore
-
-- script: dotnet build --configuration Release --no-restore
-  displayName: Build
-
-- script: dotnet test --configuration Release --no-build --logger trx --results-directory $(Build.SourcesDirectory)/TestResults
-  displayName: Test
-
-- task: PublishTestResults@2
   inputs:
-    testResultsFormat: VSTest
-    testResultsFiles: '**/*.trx'
-    searchFolder: '$(Build.SourcesDirectory)/TestResults'
-    failTaskOnFailedTests: true
+    command: 'restore'
+    projects: '**/*.sln'            # falls back to all solutions
+    workingDirectory: ${{ parameters.project_dir }}
 
-# Produce dist so publish always has something to send
-- script: dotnet publish --configuration Release --no-build -o $(Build.SourcesDirectory)/dist
+- task: DotNetCoreCLI@2
+  displayName: Build
+  inputs:
+    command: 'build'
+    projects: '**/*.sln'
+    arguments: '--configuration Release --no-restore'
+    workingDirectory: ${{ parameters.project_dir }}
+
+- task: DotNetCoreCLI@2
+  displayName: Test
+  inputs:
+    command: 'test'
+    projects: '**/*Tests/*.csproj'  # adjust to your test project pattern
+    arguments: '--configuration Release --no-build --logger trx --results-directory $(Build.SourcesDirectory)/TestResults'
+    publishTestResults: true
+    workingDirectory: ${{ parameters.project_dir }}
+
+- script: |
+    dotnet publish **/*.csproj --configuration Release --no-build -o $(Build.SourcesDirectory)/dist
   displayName: Publish app to dist
+  workingDirectory: ${{ parameters.project_dir }}
 
-# Publish Pipeline Artifact (no exists() needed)
 - task: PublishPipelineArtifact@1
-  displayName: Publish artifact
   inputs:
     targetPath: '$(Build.SourcesDirectory)/dist'
     artifact: ${{ parameters.artifact_name }}
+  displayName: Publish artifact

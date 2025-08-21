@@ -18,6 +18,8 @@ stages:
   - deployment: deploy_${{ parameters.env }}
     displayName: Deploy to ${{ parameters.env }}
     environment: ${{ parameters.env }}
+    pool:
+      vmImage: ${{ parameters.vmImage }}   # <-- important
     strategy:
       runOnce:
         deploy:

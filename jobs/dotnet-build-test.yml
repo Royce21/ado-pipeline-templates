@@ -3,10 +3,10 @@ parameters:
 - name: artifact_name
   type: string
   default: drop
-- name: project_dir                # folder that contains your .sln/.csproj
+- name: project_dir                 # folder that contains your .sln/.csproj
   type: string
   default: $(Build.SourcesDirectory)
-- name: projects_glob              # use '**/*.sln' or '**/*.csproj'
+- name: projects_glob               # '**/*.sln' or '**/*.csproj'
   type: string
   default: '**/*.sln'
 
@@ -17,7 +17,7 @@ steps:
     packageType: sdk
     version: 8.x
 
-# 🔎 Locator step (your snippet)
+# 🔎 Put the locator step RIGHT HERE (before Restore)
 - script: |
     echo "Repo root: $(Build.SourcesDirectory)"
     find "$(Build.SourcesDirectory)" -maxdepth 4 -type f \( -name "*.sln" -o -name "*.csproj" \) -print
@@ -26,14 +26,14 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: Restore
   inputs:
-    command: 'restore'
+    command: restore
     projects: ${{ parameters.projects_glob }}
     workingDirectory: ${{ parameters.project_dir }}
 
 - task: DotNetCoreCLI@2
   displayName: Build
   inputs:
-    command: 'build'
+    command: build
     projects: ${{ parameters.projects_glob }}
     arguments: '--configuration Release --no-restore'
     workingDirectory: ${{ parameters.project_dir }}
@@ -41,8 +41,8 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: Test
   inputs:
-    command: 'test'
-    projects: '**/*Tests/*.csproj'   # change if your test projects use a different pattern
+    command: test
+    projects: '**/*Tests/*.csproj'   # adjust if needed
     arguments: '--configuration Release --no-build --logger trx --results-directory $(Build.SourcesDirectory)/TestResults'
     publishTestResults: true
     workingDirectory: ${{ parameters.project_dir }}

@@ -1,26 +1,39 @@
-# jobs/node-build-test.yml
+# ado-pipeline-templates/jobs/node-build-test.yml
 parameters:
 - name: artifact_name
   type: string
   default: drop
-- name: project_dir
-  type: string
-  default: $(Build.SourcesDirectory)   # change to e.g. $(Build.SourcesDirectory)/packages/web
 
 steps:
+# Find the Node project directory
+- script: |
+    set -e
+    cd "$(Build.SourcesDirectory)"
+    echo "Repo root: $(pwd)"
+    if [ -f package.json ]; then
+      DIR="$(pwd)"
+    else
+      FOUND="$(git ls-files 'package.json' | head -n1)"
+      if [ -z "$FOUND" ]; then
+        echo "##vso[task.logissue type=error]No package.json found under $(Build.SourcesDirectory)"
+        exit 1
+      fi
+      DIR="$(dirname "$(Build.SourcesDirectory)/$FOUND")"
+    fi
+    echo "Using Node project dir: $DIR"
+    echo "##vso[task.setvariable variable=NodeProjDir]$DIR"
+  displayName: Locate Node project
+
 - task: NodeTool@0
   inputs:
     versionSpec: '20.x'
     checkLatest: true
   displayName: Use Node
 
+# Install deps (prefer lockfile if present)
 - script: |
-    pwd
-    ls -la
-  displayName: Where am I?
-  workingDirectory: ${{ parameters.project_dir }}
-
-- script: |
+    cd "$(NodeProjDir)"
+    echo "Working dir: $(pwd)"
     if [ -f package-lock.json ]; then
       npm ci
     else
@@ -28,20 +41,27 @@ steps:
       npm install
     fi
   displayName: Install deps
-  workingDirectory: ${{ parameters.project_dir }}
-
-- script: npm test --if-present
-  displayName: Test
-  workingDirectory: ${{ parameters.project_dir }}
-
-- script: npm run build --if-present
-  displayName: Build
-  workingDirectory: ${{ parameters.project_dir }}
 
 - script: |
+    cd "$(NodeProjDir)"
+    npm test --if-present
+  displayName: Test
+
+- script: |
+    cd "$(NodeProjDir)"
+    npm run build --if-present
+  displayName: Build
+
+# Collect common build outputs
+- script: |
+    set -e
     mkdir -p "$(Build.SourcesDirectory)/dist"
-    if [ -d "${{ parameters.project_dir }}/build" ]; then cp -r "${{ parameters.project_dir }}/build/"* "$(Build.SourcesDirectory)/dist" || true; fi
-    if [ -d "${{ parameters.project_dir }}/dist" ]; then cp -r "${{ parameters.project_dir }}/dist/"* "$(Build.SourcesDirectory)/dist" || true; fi
+    for d in "dist" "build" "out"; do
+      if [ -d "$(NodeProjDir)/$d" ]; then
+        echo "Copying $(NodeProjDir)/$d -> dist"
+        cp -R "$(NodeProjDir)/$d"/. "$(Build.SourcesDirectory)/dist" || true
+      fi
+    done
   displayName: Collect build output
 
 - task: PublishPipelineArtifact@1

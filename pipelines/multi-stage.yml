@@ -1,4 +1,5 @@
-# central entrypoint that consumers will extend
+# ado-pipeline-templates/pipelines/multi-stage.yml
+# Entry point templates consumers will extend
 parameters:
 - name: app_type
   type: string
@@ -11,10 +12,10 @@ parameters:
   default: false
 - name: vmImage
   type: string
-  default: ubuntu-latest
+  default: 'ubuntu-latest'
 - name: artifact_name
   type: string
-  default: drop
+  default: 'drop'
 - name: service_connection
   type: string
   default: ''
@@ -27,15 +28,15 @@ parameters:
 stages:
 - template: ../stages/ci.yml
   parameters:
-    app_type: ${{ parameters.app_type }}
-    vmImage:  ${{ parameters.vmImage }}
-    artifact_name: ${{ parameters.artifact_name }}
-    path_filter: ${{ parameters.path_filter }}
+    app_type:       ${{ parameters.app_type }}
+    vmImage:        ${{ parameters.vmImage }}
+    artifact_name:  ${{ parameters.artifact_name }}
+    path_filter:    ${{ parameters.path_filter }}
 
 - ${{ if eq(parameters.enable_deploy, true) }}:
   - template: ../stages/cd.yml
     parameters:
-      env: ${{ parameters.env }}
-      vmImage: ${{ parameters.vmImage }}
-      artifact_name: ${{ parameters.artifact_name }}
+      env:                ${{ parameters.env }}
+      vmImage:            ${{ parameters.vmImage }}
+      artifact_name:      ${{ parameters.artifact_name }}
       service_connection: ${{ parameters.service_connection }}

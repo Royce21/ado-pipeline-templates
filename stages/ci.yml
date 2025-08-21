@@ -35,14 +35,14 @@ stages:
           artifact_name: ${{ parameters.artifact_name }}
 
   # Node CI job (included only if app_type == 'node')
-  - ${{ if eq(parameters.app_type, 'node') }}:
-    - job: node_ci
-      displayName: "Build & Test (Node)"
-      pool:
-        vmImage: $(vmImageName)
-      steps:
-      - checkout: self
-        fetchDepth: 0
-      - template: ../jobs/node-build-test.yml
-        parameters:
-          artifact_name: ${{ parameters.artifact_name }}
+ - ${{ if eq(parameters.app_type, 'dotnet') }}:
+  - job: dotnet_ci
+    displayName: "Build & Test (.NET)"
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - checkout: self
+      fetchDepth: 0
+    - template: ../jobs/dotnet-build-test.yml
+      parameters:
+        artifact_name: ${{ parameters.artifact_name }}

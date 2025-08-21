@@ -2,10 +2,9 @@
 parameters:
 - name: app_type
   type: string
-  # values: [dotnet, node]   # optional
 - name: vmImage
   type: string
-  default: 'ubuntu-latest'
+  default: ubuntu-latest
 - name: artifact_name
   type: string
 - name: path_filter
@@ -16,15 +15,14 @@ parameters:
 
 stages:
 - stage: CI
-  displayName: "Build & Test"
+  displayName: Build and Test
   variables:
     vmImageName: ${{ parameters.vmImage }}
     AppType:     ${{ parameters.app_type }}
 
   jobs:
-  # .NET job (runs only if app_type == dotnet)
   - job: dotnet_ci
-    displayName: "Build & Test (.NET)"
+    displayName: Build and Test - dotnet
     condition: and(succeeded(), eq(variables['AppType'], 'dotnet'))
     pool:
       vmImage: $(vmImageName)
@@ -35,9 +33,8 @@ stages:
       parameters:
         artifact_name: ${{ parameters.artifact_name }}
 
-  # Node job (runs only if app_type == node)
   - job: node_ci
-    displayName: "Build & Test (Node)"
+    displayName: Build and Test - node
     condition: and(succeeded(), eq(variables['AppType'], 'node'))
     pool:
       vmImage: $(vmImageName)

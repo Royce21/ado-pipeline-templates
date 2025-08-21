@@ -1,19 +1,30 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
-- main
+  branches:
+    include:
+      - main
+      - develop
+      - 'feature/*'
+      - 'release/*'
 
-pool:
-  vmImage: ubuntu-latest
+resources:
+  repositories:
+  - repository: templates
+    type: github
+    name: Royce21/ado-pipeline-templates
+    ref: refs/heads/main          # later switch to refs/tags/v1.x.x
+    endpoint: github-templates-conn
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
-
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+extends:
+  template: pipelines/multi-stage.yml@templates
+  parameters:
+    app_type: dotnet              # or: node
+    env: qa                       # dev | qa | prod
+    enable_deploy: true           # false => CI only
+    vmImage: ubuntu-latest
+    artifact_name: drop
+    service_connection: my-qa-sp-connection
+    path_filter:
+      include:
+        - 'src/service-a/*'
+      exclude:
+        - 'docs/*'

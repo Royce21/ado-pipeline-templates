@@ -1,27 +1,47 @@
+# jobs/node-build-test.yml
 parameters:
 - name: artifact_name
   type: string
   default: drop
+- name: project_dir
+  type: string
+  default: $(Build.SourcesDirectory)   # change to e.g. $(Build.SourcesDirectory)/packages/web
 
 steps:
 - task: NodeTool@0
   inputs:
     versionSpec: '20.x'
+    checkLatest: true
+  displayName: Use Node
 
-- script: npm ci
-  displayName: Install
+- script: |
+    pwd
+    ls -la
+  displayName: Where am I?
+  workingDirectory: ${{ parameters.project_dir }}
+
+- script: |
+    if [ -f package-lock.json ]; then
+      npm ci
+    else
+      echo "No package-lock.json found; running npm install"
+      npm install
+    fi
+  displayName: Install deps
+  workingDirectory: ${{ parameters.project_dir }}
 
 - script: npm test --if-present
   displayName: Test
+  workingDirectory: ${{ parameters.project_dir }}
 
 - script: npm run build --if-present
   displayName: Build
+  workingDirectory: ${{ parameters.project_dir }}
 
-# Collect build output best-effort to dist (doesn't fail if build/ doesn’t exist)
 - script: |
     mkdir -p "$(Build.SourcesDirectory)/dist"
-    if [ -d "build" ]; then cp -r build/* "$(Build.SourcesDirectory)/dist" || true; fi
-    if [ -d "dist" ] && [ "$(Build.SourcesDirectory)/dist" != "$(Build.SourcesDirectory)/dist" ]; then true; fi
+    if [ -d "${{ parameters.project_dir }}/build" ]; then cp -r "${{ parameters.project_dir }}/build/"* "$(Build.SourcesDirectory)/dist" || true; fi
+    if [ -d "${{ parameters.project_dir }}/dist" ]; then cp -r "${{ parameters.project_dir }}/dist/"* "$(Build.SourcesDirectory)/dist" || true; fi
   displayName: Collect build output
 
 - task: PublishPipelineArtifact@1

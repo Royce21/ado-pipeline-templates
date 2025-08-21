@@ -39,8 +39,9 @@ steps:
     workingDirectory: ${{ parameters.project_dir }}
 
 - script: |
-    dotnet publish **/*.csproj --configuration Release --no-build -o $(Build.SourcesDirectory)/dist
-  displayName: Publish app to dist
+    echo "Repo root: $(Build.SourcesDirectory)"
+    find "$(Build.SourcesDirectory)" -maxdepth 4 -type f \( -name "*.sln" -o -name "*.csproj" \) -print
+  displayName: Locate .NET projects
   workingDirectory: ${{ parameters.project_dir }}
 
 - task: PublishPipelineArtifact@1

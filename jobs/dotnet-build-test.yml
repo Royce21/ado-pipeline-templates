@@ -1,31 +1,40 @@
-# jobs/dotnet-build-test.yml  (drop-in)
+# ado-pipeline-templates/jobs/dotnet-build-test.yml
 parameters:
 - name: artifact_name
   type: string
   default: drop
-- name: project_dir
+- name: project_dir                # folder that contains your .sln/.csproj
   type: string
-  default: $(Build.SourcesDirectory)   # repo root or a subfolder
+  default: $(Build.SourcesDirectory)
+- name: projects_glob              # use '**/*.sln' or '**/*.csproj'
+  type: string
+  default: '**/*.sln'
 
 steps:
 - task: UseDotNet@2
+  displayName: Use .NET 8
   inputs:
     packageType: sdk
     version: 8.x
-  displayName: Use .NET 8
+
+# 🔎 Locator step (your snippet)
+- script: |
+    echo "Repo root: $(Build.SourcesDirectory)"
+    find "$(Build.SourcesDirectory)" -maxdepth 4 -type f \( -name "*.sln" -o -name "*.csproj" \) -print
+  displayName: Locate .NET projects
 
 - task: DotNetCoreCLI@2
   displayName: Restore
   inputs:
     command: 'restore'
-    projects: '**/*.sln'            # falls back to all solutions
+    projects: ${{ parameters.projects_glob }}
     workingDirectory: ${{ parameters.project_dir }}
 
 - task: DotNetCoreCLI@2
   displayName: Build
   inputs:
     command: 'build'
-    projects: '**/*.sln'
+    projects: ${{ parameters.projects_glob }}
     arguments: '--configuration Release --no-restore'
     workingDirectory: ${{ parameters.project_dir }}
 
@@ -33,19 +42,18 @@ steps:
   displayName: Test
   inputs:
     command: 'test'
-    projects: '**/*Tests/*.csproj'  # adjust to your test project pattern
+    projects: '**/*Tests/*.csproj'   # change if your test projects use a different pattern
     arguments: '--configuration Release --no-build --logger trx --results-directory $(Build.SourcesDirectory)/TestResults'
     publishTestResults: true
     workingDirectory: ${{ parameters.project_dir }}
 
 - script: |
-    echo "Repo root: $(Build.SourcesDirectory)"
-    find "$(Build.SourcesDirectory)" -maxdepth 4 -type f \( -name "*.sln" -o -name "*.csproj" \) -print
-  displayName: Locate .NET projects
+    dotnet publish ${{ parameters.projects_glob }} --configuration Release --no-build -o $(Build.SourcesDirectory)/dist
+  displayName: Publish app to dist
   workingDirectory: ${{ parameters.project_dir }}
 
 - task: PublishPipelineArtifact@1
+  displayName: Publish artifact
   inputs:
     targetPath: '$(Build.SourcesDirectory)/dist'
     artifact: ${{ parameters.artifact_name }}
-  displayName: Publish artifact

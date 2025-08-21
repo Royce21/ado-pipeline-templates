@@ -2,8 +2,7 @@
 parameters:
 - name: app_type
   type: string
-  # you can constrain if you want:
-  # values: [dotnet, node]
+  # values: [dotnet, node]   # optional constraint
 - name: vmImage
   type: string
   default: 'ubuntu-latest'
@@ -19,30 +18,32 @@ stages:
 - stage: CI
   displayName: "Build & Test"
   variables:
-    vmImageName: ${{ parameters.vmImage }}
-  jobs:
-  # .NET CI job (included only if app_type == 'dotnet')
-  - ${{ if eq(parameters.app_type, 'dotnet') }}:
-    - job: dotnet_ci
-      displayName: "Build & Test (.NET)"
-      pool:
-        vmImage: $(vmImageName)
-      steps:
-      - checkout: self
-        fetchDepth: 0
-      - template: ../jobs/dotnet-build-test.yml
-        parameters:
-          artifact_name: ${{ parameters.artifact_name }}
+    vmImageName: ${{ parameters.vmImage }}   # compile-time -> variable
+    AppType:     ${{ parameters.app_type }}
 
-  # Node CI job (included only if app_type == 'node')
- - ${{ if eq(parameters.app_type, 'dotnet') }}:
+  jobs:
+  # .NET job runs only when AppType == 'dotnet'
   - job: dotnet_ci
     displayName: "Build & Test (.NET)"
+    condition: and(succeeded(), eq(variables['AppType'], 'dotnet'))
     pool:
       vmImage: $(vmImageName)
     steps:
     - checkout: self
       fetchDepth: 0
     - template: ../jobs/dotnet-build-test.yml
+      parameters:
+        artifact_name: ${{ parameters.artifact_name }}
+
+  # Node job runs only when AppType == 'node'
+  - job: node_ci
+    displayName: "Build & Test (Node)"
+    condition: and(succeeded(), eq(variables['AppType'], 'node'))
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - checkout: self
+      fetchDepth: 0
+    - template: ../jobs/node-build-test.yml
       parameters:
         artifact_name: ${{ parameters.artifact_name }}

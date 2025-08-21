@@ -5,16 +5,27 @@ parameters:
 
 steps:
 - task: NodeTool@0
-  inputs: { versionSpec: '20.x' }
-- script: node -v && npm -v
-  displayName: Node Info
+  inputs:
+    versionSpec: '20.x'
+
 - script: npm ci
   displayName: Install
+
 - script: npm test --if-present
   displayName: Test
+
 - script: npm run build --if-present
   displayName: Build
-- publish: $(Build.SourcesDirectory)/dist
-  artifact: ${{ parameters.artifact_name }}
+
+# Collect build output best-effort to dist (doesn't fail if build/ doesn’t exist)
+- script: |
+    mkdir -p "$(Build.SourcesDirectory)/dist"
+    if [ -d "build" ]; then cp -r build/* "$(Build.SourcesDirectory)/dist" || true; fi
+    if [ -d "dist" ] && [ "$(Build.SourcesDirectory)/dist" != "$(Build.SourcesDirectory)/dist" ]; then true; fi
+  displayName: Collect build output
+
+- task: PublishPipelineArtifact@1
   displayName: Publish artifact
-  condition: exists('dist')
+  inputs:
+    targetPath: '$(Build.SourcesDirectory)/dist'
+    artifact: ${{ parameters.artifact_name }}

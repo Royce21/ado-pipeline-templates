@@ -16,7 +16,9 @@ stages:
   displayName: Build & Test
   jobs:
   - job: build_test
-    pool: ${{ parameters.vmImage }}
+    pool: 
+    vmImage: ${{ parameters.vmImage }}
+
     steps:
     - checkout: self
       fetchDepth: 0

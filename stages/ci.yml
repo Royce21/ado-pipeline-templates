@@ -29,10 +29,11 @@ stages:
 
     # Language-specific jobs
     - ${{ if eq(parameters.app_type, 'dotnet') }}:
-      - template: ../jobs/dotnet-build-test.yml
-        parameters:
+       template: ../jobs/dotnet-build-test.yml
+       parameters:
           artifact_name: ${{ parameters.artifact_name }}
-
+          project_dir: $(Build.SourcesDirectory)/src/service-a     # ← adjust after you see the logged path
+          projects_glob: '**/*.sln'
     - ${{ if eq(parameters.app_type, 'node') }}:
       - template: ../jobs/node-build-test.yml
         parameters:

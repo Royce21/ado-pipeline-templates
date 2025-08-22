@@ -1,10 +1,8 @@
-<<<<<<< HEAD
+
 # ado-pipeline-templates/pipelines/multi-stage.yml
 # Entry point template that consumers 'extends'
 
-=======
 # Entry point templates consumers will extend
->>>>>>> cf3ccb4 (chore: no-op pipeline; update templates)
 parameters:
 - name: app_type
   type: string

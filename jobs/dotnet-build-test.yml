@@ -11,45 +11,52 @@ steps:
     packageType: sdk
     version: 8.x
 
-# 🔎 Auto-detect a .sln (preferred) or a .csproj and expose variables
+# Detect .sln or .csproj; SKIP (no error) if none
 - script: |
     set -e
-    ROOT="$(Build.SourcesDirectory)"
-    echo "Repo root: $ROOT"
-    FOUND="$(find "$ROOT" -maxdepth 4 -type f -name '*.sln' | head -n1)"
+    cd "$(Build.SourcesDirectory)"
+    echo "Repo root: $(pwd)"
+    FOUND="$(git ls-files '*.sln' | head -n1)"
     if [ -z "$FOUND" ]; then
-      FOUND="$(find "$ROOT" -maxdepth 4 -type f -name '*.csproj' | head -n1)"
+      FOUND="$(git ls-files '*.csproj' | head -n1)"
     fi
     if [ -z "$FOUND" ]; then
-      echo "##vso[task.logissue type=error]No .sln or .csproj found under $ROOT"
-      exit 1
+      echo "##vso[task.logissue type=warning].NET solution/project not found; skipping .NET CI."
+      echo "##vso[task.setvariable variable=DotFound]false"
+      exit 0    # ← IMPORTANT: do NOT fail the job
     fi
     DIR="$(dirname "$FOUND")"
     echo "Found: $FOUND"
-    echo "##vso[task.setvariable variable=DotProject]$FOUND"
-    echo "##vso[task.setvariable variable=DotProjDir]$DIR"
-  displayName: Locate .NET project/solution
+    echo "##vso[task.setvariable variable=DotFound]true"
+    echo "##vso[task.setvariable variable=DotProject]$(Build.SourcesDirectory)/$FOUND"
+    echo "##vso[task.setvariable variable=DotProjDir]$(Build.SourcesDirectory)/$DIR"
+  displayName: "Locate .NET project/solution"
 
-# Restore the detected solution/project
+# Friendly no-op if nothing found
+- script: echo "Skipping .NET CI: no .sln/.csproj in repo"
+  displayName: "Skip .NET (no project)"
+  condition: ne(variables['DotFound'], 'true')
+
 - task: DotNetCoreCLI@2
   displayName: Restore
+  condition: eq(variables['DotFound'], 'true')
   inputs:
     command: restore
     projects: '$(DotProject)'
     workingDirectory: '$(DotProjDir)'
 
-# Build the same solution/project
 - task: DotNetCoreCLI@2
   displayName: Build
+  condition: eq(variables['DotFound'], 'true')
   inputs:
     command: build
     projects: '$(DotProject)'
     arguments: '--configuration Release --no-restore'
     workingDirectory: '$(DotProjDir)'
 
-# Run tests (search test csproj anywhere in repo)
 - task: DotNetCoreCLI@2
   displayName: Test
+  condition: eq(variables['DotFound'], 'true')
   inputs:
     command: test
     projects: '**/*Tests/*.csproj'
@@ -57,7 +64,6 @@ steps:
     publishTestResults: true
     workingDirectory: '$(Build.SourcesDirectory)'
 
-# Publish: if solution -> publish all csproj under its dir; if csproj -> publish it
 - script: |
     set -e
     mkdir -p "$(Build.SourcesDirectory)/dist"
@@ -71,10 +77,12 @@ steps:
       echo "Publishing $(DotProject)"
       dotnet publish "$(DotProject)" --configuration Release --no-build -o "$(Build.SourcesDirectory)/dist"
     fi
-  displayName: Publish app to dist
+  displayName: "Publish app to dist"
+  condition: eq(variables['DotFound'], 'true')
 
 - task: PublishPipelineArtifact@1
-  displayName: Publish artifact
+  displayName: "Publish artifact"
+  condition: eq(variables['DotFound'], 'true')
   inputs:
     targetPath: '$(Build.SourcesDirectory)/dist'
     artifact: ${{ parameters.artifact_name }}

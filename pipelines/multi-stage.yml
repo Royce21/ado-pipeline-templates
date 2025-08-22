@@ -1,42 +1,62 @@
 # ado-pipeline-templates/pipelines/multi-stage.yml
-# Entry point templates consumers will extend
+# Entry point template that consumers 'extends'
 parameters:
 - name: app_type
   type: string
-  values: [dotnet, node]
+  default: dotnet
+  values:
+  - dotnet
+  - node
+
 - name: env
   type: string
-  values: [dev, qa, prod]
+  default: dev
+  values:
+  - dev
+  - qa
+  - prod
+
 - name: enable_deploy
   type: boolean
   default: false
+
 - name: vmImage
   type: string
-  default: 'ubuntu-latest'
+  default: ubuntu-latest
+
 - name: artifact_name
   type: string
-  default: 'drop'
+  default: drop
+
 - name: service_connection
   type: string
   default: ''
-- name: path_filter
+
+- name: path_filter        # kept for compatibility; pass through to CI
   type: object
   default:
     include: []
     exclude: []
 
+- name: var_groups         # optional variable groups for CD
+  type: object
+  default: []
+
 stages:
+# ----- CI -----
 - template: ../stages/ci.yml
   parameters:
-    app_type:       ${{ parameters.app_type }}
-    vmImage:        ${{ parameters.vmImage }}
-    artifact_name:  ${{ parameters.artifact_name }}
-    path_filter:    ${{ parameters.path_filter }}
+    app_type:      ${{ parameters.app_type }}
+    vmImage:       ${{ parameters.vmImage }}
+    artifact_name: ${{ parameters.artifact_name }}
+    path_filter:   ${{ parameters.path_filter }}
 
+# ----- CD (optional) -----
 - ${{ if eq(parameters.enable_deploy, true) }}:
   - template: ../stages/cd.yml
     parameters:
-      env:                ${{ parameters.env }}
-      vmImage:            ${{ parameters.vmImage }}
-      artifact_name:      ${{ parameters.artifact_name }}
-      service_connection: ${{ parameters.service_connection }}
+      env:               ${{ parameters.env }}
+      vmImage:           ${{ parameters.vmImage }}
+      artifact_name:     ${{ parameters.artifact_name }}
+      service_connection:${{ parameters.service_connection }}
+      var_groups:        ${{ parameters.var_groups }}

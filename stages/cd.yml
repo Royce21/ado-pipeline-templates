@@ -1,32 +1,59 @@
+# ado-pipeline-templates/stages/cd.yml
 parameters:
 - name: env
   type: string
+  default: dev          # prevents “A value for 'env' must be provided”
 - name: vmImage
   type: string
+  default: ubuntu-latest
 - name: artifact_name
   type: string
+  default: drop
 - name: service_connection
   type: string
+  default: ''
+- name: var_groups
+  type: object
+  default: []
 
 stages:
-- stage: CD
-  displayName: Deploy
+- stage: Deploy_${{ parameters.env }}
+  displayName: "Deploy to ${{ parameters.env }}"
   dependsOn: CI
-  condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'),
-                                 startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')))
+  condition: succeeded()
+
+  variables:
+  - ${{ each g in parameters.var_groups }}:
+    - group: ${{ g }}
+
   jobs:
   - deployment: deploy_${{ parameters.env }}
-    displayName: Deploy to ${{ parameters.env }}
+    displayName: "Deploy (${{ parameters.env }})"
     environment: ${{ parameters.env }}
     pool:
-      vmImage: ${{ parameters.vmImage }}   # <-- important
+      vmImage: ${{ parameters.vmImage }}
     strategy:
       runOnce:
         deploy:
           steps:
+          - checkout: none
+
           - download: current
             artifact: ${{ parameters.artifact_name }}
-          - template: ../steps/deploy-script.yml
-            parameters:
-              service_connection: ${{ parameters.service_connection }}
-              env: ${{ parameters.env }}
+            displayName: "Download artifact (current run)"
+
+          - script: |
+              echo "Artifact path:"
+              ls -la "$(Pipeline.Workspace)/${{ parameters.artifact_name }}"
+            displayName: "Inspect artifact"
+
+          - ${{ if ne(parameters.service_connection, '') }}:
+            - task: AzureCLI@2
+              displayName: "Deploy (placeholder)"
+              inputs:
+                azureSubscription: ${{ parameters.service_connection }}
+                scriptType: bash
+                scriptLocation: inlineScript
+                inlineScript: |
+                  echo "Deploying to ${{ parameters.env }}"
+                  echo "From: $(Pipeline.Workspace)/${{ parameters.artifact_name }}"

@@ -64,25 +64,26 @@ steps:
     publishTestResults: true
     workingDirectory: '$(Build.SourcesDirectory)'
 
+# ▼▼ PLACE YOUR SNIPPET HERE (replaces old publish blocks) ▼▼
 - script: |
     set -e
     mkdir -p "$(Build.SourcesDirectory)/dist"
+    # publish either the solution's projects or one project
     if [[ "$(DotProject)" == *.sln ]]; then
-      echo "Publishing all projects under $(DotProjDir)"
-      find "$(DotProjDir)" -maxdepth 3 -type f -name '*.csproj' -print0 | while IFS= read -r -d '' P; do
-        echo "Publishing $P"
-        dotnet publish "$P" --configuration Release --no-build -o "$(Build.SourcesDirectory)/dist"
+      find "$(DotProjDir)" -maxdepth 3 -type f -name '*.csproj' -print0 | \
+      while IFS= read -r -d '' P; do
+        dotnet publish "$P" -c Release --no-build -o "$(Build.SourcesDirectory)/dist"
       done
     else
-      echo "Publishing $(DotProject)"
-      dotnet publish "$(DotProject)" --configuration Release --no-build -o "$(Build.SourcesDirectory)/dist"
+      dotnet publish "$(DotProject)" -c Release --no-build -o "$(Build.SourcesDirectory)/dist"
     fi
-  displayName: 'Publish app to dist'
+  displayName: 'Publish to dist'
   condition: eq(variables['DotFound'], 'true')
 
 - task: PublishPipelineArtifact@1
-  displayName: 'Publish artifact'
+  displayName: 'Publish artifact (drop)'
   condition: eq(variables['DotFound'], 'true')
   inputs:
     targetPath: '$(Build.SourcesDirectory)/dist'
-    artifact: ${{ parameters.artifact_name }}
+    artifact: 'drop'   # keep this 'drop' if your CD downloads 'drop'
+# ▲▲ END OF SNIPPET ▲▲

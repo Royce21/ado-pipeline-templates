@@ -20,12 +20,22 @@ stages:
 - stage: Deploy_${{ parameters.env }}
   displayName: "Deploy to ${{ parameters.env }}"
   dependsOn: CI
+<<<<<<< HEAD
   condition: succeeded()
 
   variables:
   - ${{ each g in parameters.var_groups }}:
     - group: ${{ g }}
 
+=======
+  condition: and(
+    succeeded(),
+    or(
+      eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+      startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')
+    )
+  )
+>>>>>>> cf3ccb4 (chore: no-op pipeline; update templates)
   jobs:
   - deployment: deploy_${{ parameters.env }}
     displayName: "Deploy (${{ parameters.env }})"

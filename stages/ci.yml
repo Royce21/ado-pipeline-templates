@@ -15,6 +15,7 @@ parameters:
 
 stages:
 - stage: CI
+<<<<<<< HEAD
   displayName: Build and Test
   variables:
     vmImageName: ${{ parameters.vmImage }}
@@ -44,3 +45,24 @@ stages:
     - template: ../jobs/node-build-test.yml
       parameters:
         artifact_name: ${{ parameters.artifact_name }}
+=======
+  displayName: "Build & Test"
+  jobs:
+  - job: build_test
+    displayName: "Build and Test"
+    pool:
+      vmImage: ${{ parameters.vmImage }}
+    steps:
+    - checkout: self
+      fetchDepth: 0
+
+    - ${{ if eq(parameters.app_type, 'dotnet') }}:
+      - template: ../jobs/dotnet-build-test.yml
+        parameters:
+          artifact_name: ${{ parameters.artifact_name }}
+
+    - ${{ if eq(parameters.app_type, 'node') }}:
+      - template: ../jobs/node-build-test.yml
+        parameters:
+          artifact_name: ${{ parameters.artifact_name }}
+>>>>>>> cf3ccb4 (chore: no-op pipeline; update templates)

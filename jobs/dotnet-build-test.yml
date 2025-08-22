@@ -6,6 +6,7 @@ parameters:
 
 steps:
 - task: UseDotNet@2
+<<<<<<< HEAD
   displayName: 'Use .NET 8'
   inputs:
     packageType: 'sdk'
@@ -87,3 +88,27 @@ steps:
     targetPath: '$(Build.SourcesDirectory)/dist'
     artifact: 'drop'   # keep this 'drop' if your CD downloads 'drop'
 # ▲▲ END OF SNIPPET ▲▲
+=======
+  inputs: { packageType: 'sdk', version: '8.x' }
+
+- script: dotnet restore
+  displayName: Restore
+
+- script: dotnet build --configuration Release --no-restore
+  displayName: Build
+
+- script: dotnet test --configuration Release --no-build --logger trx --results-directory $(Build.SourcesDirectory)/TestResults
+  displayName: Test
+
+- task: PublishTestResults@2
+  inputs:
+    testResultsFormat: VSTest
+    testResultsFiles: '**/*.trx'
+    searchFolder: '$(Build.SourcesDirectory)/TestResults'
+    failTaskOnFailedTests: true
+
+- publish: $(Build.SourcesDirectory)/dist
+  artifact: ${{ parameters.artifact_name }}
+  displayName: Publish artifact
+  condition: exists('dist')
+>>>>>>> cf3ccb4 (chore: no-op pipeline; update templates)

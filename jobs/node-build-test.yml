@@ -32,6 +32,7 @@ steps:
   condition: ne(variables['NodeFound'], 'true')
 
 - task: NodeTool@0
+<<<<<<< HEAD
   displayName: "Use Node 20"
   condition: eq(variables['NodeFound'], 'true')
   inputs:
@@ -83,3 +84,20 @@ steps:
     targetPath: '$(Build.SourcesDirectory)/dist'
     artifact: 'drop'   # must match what CD downloads
 # ▲▲ END OF REPLACED BLOCKS ▲▲
+=======
+  inputs: { versionSpec: '20.x' }
+
+- script: npm ci
+  displayName: Install
+
+- script: npm test --if-present
+  displayName: Test
+
+- script: npm run build --if-present
+  displayName: Build
+
+- publish: $(Build.SourcesDirectory)/dist
+  artifact: ${{ parameters.artifact_name }}
+  displayName: Publish artifact
+  condition: exists('dist')
+>>>>>>> cf3ccb4 (chore: no-op pipeline; update templates)

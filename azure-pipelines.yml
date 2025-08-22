@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 trigger:
   branches:
     include:
@@ -28,3 +29,12 @@ extends:
         - 'src/service-a/*'
       exclude:
         - 'docs/*'
+=======
+﻿trigger: none
+pr: none
+schedules: []
+pool: { vmImage: ubuntu-latest }
+steps:
+- script: echo "Templates repo has no CI; triggers disabled."
+  displayName: No-op
+>>>>>>> cf3ccb4 (chore: no-op pipeline; update templates)

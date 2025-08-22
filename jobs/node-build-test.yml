@@ -63,6 +63,7 @@ steps:
   displayName: "Build"
   condition: eq(variables['NodeFound'], 'true')
 
+# ▼▼ REPLACED BLOCKS: collect build outputs, then publish 'drop' ▼▼
 - script: |
     set -e
     mkdir -p "$(Build.SourcesDirectory)/dist"
@@ -76,8 +77,9 @@ steps:
   condition: eq(variables['NodeFound'], 'true')
 
 - task: PublishPipelineArtifact@1
-  displayName: "Publish artifact"
+  displayName: "Publish artifact (drop)"
   condition: eq(variables['NodeFound'], 'true')
   inputs:
     targetPath: '$(Build.SourcesDirectory)/dist'
-    artifact: ${{ parameters.artifact_name }}
+    artifact: 'drop'   # must match what CD downloads
+# ▲▲ END OF REPLACED BLOCKS ▲▲

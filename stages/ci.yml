@@ -1,64 +1,46 @@
-# ado-pipeline-templates/stages/cd.yml
+# ado-pipeline-templates/stages/ci.yml
 parameters:
-- name: env
-  type: string           # dev | qa | prod
+- name: app_type
+  type: string
 - name: vmImage
   type: string
   default: ubuntu-latest
 - name: artifact_name
   type: string
-  default: drop          # must match what CI publishes
-- name: service_connection
-  type: string
-  default: ''            # e.g. my-qa-sp-connection
-- name: var_groups
+- name: path_filter
   type: object
-  default: []            # e.g. ['app-qa']
+  default:
+    include: []
+    exclude: []
 
 stages:
-- stage: Deploy_${{ parameters.env }}
-  displayName: "Deploy to ${{ parameters.env }}"
-  dependsOn: CI
-  condition: succeeded()
+- stage: CI
+  displayName: Build and Test
   variables:
-  # Optional variable groups (Library -> Variable groups)
-  - ${{ each g in parameters.var_groups }}:
-    - group: ${{ g }}
+    vmImageName: ${{ parameters.vmImage }}
+    AppType:     ${{ parameters.app_type }}
 
   jobs:
-  - deployment: deploy_${{ parameters.env }}
-    displayName: "Deploy (${{ parameters.env }})"
-    environment: ${{ parameters.env }}       # ADO Environments -> dev/qa/prod (with approvals)
+  - job: dotnet_ci
+    displayName: Build and Test - dotnet
+    condition: and(succeeded(), eq(variables['AppType'], 'dotnet'))
     pool:
-      vmImage: ${{ parameters.vmImage }}
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - checkout: none
+      vmImage: $(vmImageName)
+    steps:
+    - checkout: self
+      fetchDepth: 0
+    - template: ../jobs/dotnet-build-test.yml
+      parameters:
+        artifact_name: ${{ parameters.artifact_name }}
 
-          # ✅ Download the artifact from the CURRENT run
-          - download: current
-            artifact: ${{ parameters.artifact_name }}
-            displayName: "Download artifact (current run)"
-
-          # Inspect what we downloaded (optional but handy while wiring up)
-          - script: |
-              echo "Artifact folder:"
-              ls -la "$(Pipeline.Workspace)/${{ parameters.artifact_name }}"
-            displayName: "Inspect artifact"
-
-          # Example deploy placeholder (runs only if a service connection was provided)
-          - ${{ if ne(parameters.service_connection, '') }}:
-            - task: AzureCLI@2
-              displayName: "Deploy (placeholder)"
-              inputs:
-                azureSubscription: ${{ parameters.service_connection }}
-                scriptType: bash
-                scriptLocation: inlineScript
-                inlineScript: |
-                  echo "Deploying to ${{ parameters.env }} using service connection '${{ parameters.service_connection }}'"
-                  echo "Artifact path: $(Pipeline.Workspace)/${{ parameters.artifact_name }}"
-                  # TODO: Replace with real az deploy commands (webapp, containerapp, functionapp, etc.)
-                  # Example (Web App):
-                  # az webapp deploy --resource-group <rg> --name <app> --src-path "$(Pipeline.Workspace)/${{ parameters.artifact_name }}"
+  - job: node_ci
+    displayName: Build and Test - node
+    condition: and(succeeded(), eq(variables['AppType'], 'node'))
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - checkout: self
+      fetchDepth: 0
+    - template: ../jobs/node-build-test.yml
+      parameters:
+        artifact_name: ${{ parameters.artifact_name }}

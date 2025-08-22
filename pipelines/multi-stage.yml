@@ -1,20 +1,16 @@
 # ado-pipeline-templates/pipelines/multi-stage.yml
 # Entry point template that consumers 'extends'
+
 parameters:
 - name: app_type
   type: string
   default: dotnet
-  values:
-  - dotnet
-  - node
+  values: [dotnet, node]
 
 - name: env
   type: string
   default: dev
-  values:
-  - dev
-  - qa
-  - prod
+  values: [dev, qa, prod]
 
 - name: enable_deploy
   type: boolean
@@ -32,13 +28,13 @@ parameters:
   type: string
   default: ''
 
-- name: path_filter        # kept for compatibility; pass through to CI
+- name: path_filter
   type: object
   default:
     include: []
     exclude: []
 
-- name: var_groups         # optional variable groups for CD
+- name: var_groups
   type: object
   default: []
 
@@ -51,12 +47,12 @@ stages:
     artifact_name: ${{ parameters.artifact_name }}
     path_filter:   ${{ parameters.path_filter }}
 
-# ----- CD (optional) -----
+# ----- CD (compile-time include) -----
 - ${{ if eq(parameters.enable_deploy, true) }}:
   - template: ../stages/cd.yml
     parameters:
       env:               ${{ parameters.env }}
       vmImage:           ${{ parameters.vmImage }}
       artifact_name:     ${{ parameters.artifact_name }}
-      service_connection:${{ parameters.service_connection }}
+      service_connection: ${{ parameters.service_connection }}
       var_groups:        ${{ parameters.var_groups }}

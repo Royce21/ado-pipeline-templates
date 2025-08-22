@@ -47,12 +47,12 @@ stages:
     artifact_name: ${{ parameters.artifact_name }}
     path_filter:   ${{ parameters.path_filter }}
 
-# ----- CD (compile-time include) -----
+# ----- CD (optional) -----
 - ${{ if eq(parameters.enable_deploy, true) }}:
   - template: ../stages/cd.yml
     parameters:
-      env:               ${{ parameters.env }}
-      vmImage:           ${{ parameters.vmImage }}
-      artifact_name:     ${{ parameters.artifact_name }}
+      env:                ${{ parameters.env }}
+      vmImage:            ${{ parameters.vmImage }}
+      artifact_name:      ${{ parameters.artifact_name }}
       service_connection: ${{ parameters.service_connection }}
-      var_groups:        ${{ parameters.var_groups }}
+      var_groups:         ${{ parameters.var_groups }}

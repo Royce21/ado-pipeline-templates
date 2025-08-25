@@ -5,6 +5,7 @@ parameters:
   default: drop
 
 steps:
+# Locate Node project
 - script: |
     set -e
     cd "$(Build.SourcesDirectory)"
@@ -23,14 +24,14 @@ steps:
     echo "Using Node project dir: $DIR"
     echo "##vso[task.setvariable variable=NodeFound]true"
     echo "##vso[task.setvariable variable=NodeProjDir]$DIR"
-  displayName: "Locate Node project"
+  displayName: Locate Node project
 
 - script: 'echo "Skipping Node CI: no package.json in repo"'
-  displayName: "Skip Node (no package.json)"
+  displayName: Skip Node (no package.json)
   condition: ne(variables['NodeFound'], 'true')
 
 - task: NodeTool@0
-  displayName: "Use Node 20"
+  displayName: Use Node 20
   condition: eq(variables['NodeFound'], 'true')
   inputs:
     versionSpec: '20.x'
@@ -46,19 +47,19 @@ steps:
       echo "No package-lock.json found; running npm install"
       npm install
     fi
-  displayName: "Install deps"
+  displayName: Install deps
   condition: eq(variables['NodeFound'], 'true')
 
 - script: |
     cd "$(NodeProjDir)"
     npm test --if-present
-  displayName: "Test"
+  displayName: Test
   condition: eq(variables['NodeFound'], 'true')
 
 - script: |
     cd "$(NodeProjDir)"
     npm run build --if-present
-  displayName: "Build"
+  displayName: Build
   condition: eq(variables['NodeFound'], 'true')
 
 - script: |
@@ -70,11 +71,11 @@ steps:
         cp -R "$(NodeProjDir)/$d"/. "$(Build.SourcesDirectory)/dist" || true
       fi
     done
-  displayName: "Collect build output"
+  displayName: Collect build output
   condition: eq(variables['NodeFound'], 'true')
 
 - task: PublishPipelineArtifact@1
-  displayName: "Publish artifact (drop)"
+  displayName: Publish artifact (drop)
   condition: eq(variables['NodeFound'], 'true')
   inputs:
     targetPath: '$(Build.SourcesDirectory)/dist'

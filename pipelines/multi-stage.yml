@@ -45,8 +45,10 @@ stages:
     artifact_name: ${{ parameters.artifact_name }}
     path_filter:   ${{ parameters.path_filter }}
 
-# -------- CD (optional) --------
-- ${{ if eq(parameters.enable_deploy, true) }}:
+# -------- CD (only on main or release/*) --------
+- ${{ if and(eq(parameters.enable_deploy, true),
+             or(contains(variables['Build.SourceBranch'], '/main'),
+                contains(variables['Build.SourceBranch'], '/release/'))) }}:
   - template: ../stages/cd.yml
     parameters:
       env:                ${{ parameters.env }}
@@ -54,3 +56,4 @@ stages:
       artifact_name:      ${{ parameters.artifact_name }}
       service_connection: ${{ parameters.service_connection }}
       var_groups:         ${{ parameters.var_groups }}
+

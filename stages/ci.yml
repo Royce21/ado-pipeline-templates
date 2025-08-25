@@ -19,6 +19,7 @@ parameters:
 stages:
 - stage: CI
   displayName: Build and Test
+
   jobs:
   - ${{ if eq(parameters.app_type, 'dotnet') }}:
     - job: dotnet_ci

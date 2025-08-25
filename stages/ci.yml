@@ -1,18 +1,15 @@
-﻿# ado-pipeline-templates/stages/ci.yml
+# ado-pipeline-templates/stages/ci.yml
 parameters:
 - name: app_type
   type: string
   default: dotnet
   values: [dotnet, node]
-
 - name: vmImage
   type: string
   default: ubuntu-latest
-
 - name: artifact_name
   type: string
   default: drop
-
 - name: path_filter
   type: object
   default:
@@ -27,12 +24,10 @@ stages:
     AppType: ${{ parameters.app_type }}
 
   jobs:
-  # Only include the dotnet job when app_type == 'dotnet'
   - ${{ if eq(parameters.app_type, 'dotnet') }}:
     - job: dotnet_ci
       displayName: Build and Test - dotnet
-      pool:
-        vmImage: $(vmImageName)
+      pool: { vmImage: $(vmImageName) }
       steps:
       - checkout: self
         fetchDepth: 0
@@ -40,12 +35,10 @@ stages:
         parameters:
           artifact_name: ${{ parameters.artifact_name }}
 
-  # Only include the node job when app_type == 'node'
   - ${{ if eq(parameters.app_type, 'node') }}:
     - job: node_ci
       displayName: Build and Test - node
-      pool:
-        vmImage: $(vmImageName)
+      pool: { vmImage: $(vmImageName) }
       steps:
       - checkout: self
         fetchDepth: 0

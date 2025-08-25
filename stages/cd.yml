@@ -1,5 +1,8 @@
 # ado-pipeline-templates/stages/cd.yml
 parameters:
+- name: enable_deploy
+  type: boolean
+  default: false
 - name: env
   type: string
   default: dev
@@ -20,12 +23,13 @@ stages:
 - stage: Deploy_${{ parameters.env }}
   displayName: Deploy to ${{ parameters.env }}
   dependsOn: CI
-  # Run only on main or release/* branches
+  # Gate by both "enable_deploy" and branch (main or release/*)
   condition: and(
               succeeded(),
+              eq('${{ parameters.enable_deploy }}','True'),
               or(
-                eq(variables['Build.SourceBranch'], 'refs/heads/main'),
-                contains(variables['Build.SourceBranch'], 'refs/heads/release/')
+                eq(variables['Build.SourceBranch'],'refs/heads/main'),
+                startsWith(variables['Build.SourceBranch'],'refs/heads/release/')
               )
             )
 
@@ -50,8 +54,7 @@ stages:
             displayName: Download artifact (current run)
 
           - script: |
-              echo "Artifact directory:"
-              echo "$(Pipeline.Workspace)/${{ parameters.artifact_name }}"
+              echo "Artifact directory: $(Pipeline.Workspace)/${{ parameters.artifact_name }}"
               ls -la "$(Pipeline.Workspace)/${{ parameters.artifact_name }}" || true
             displayName: Inspect artifact
 
@@ -63,6 +66,5 @@ stages:
                 scriptType: bash
                 scriptLocation: inlineScript
                 inlineScript: |
-                  echo "Deploying to: ${{ parameters.env }}"
-                  echo "From artifact: $(Pipeline.Workspace)/${{ parameters.artifact_name }}"
-                  # TODO: add 'az' commands here
+                  echo "Deploying to ${{ parameters.env }}"
+                  echo "Using artifact at $(Pipeline.Workspace)/${{ parameters.artifact_name }}"

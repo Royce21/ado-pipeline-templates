@@ -1,4 +1,4 @@
----
+--
 # ado-pipeline-templates/pipelines/multi-stage.yml
 parameters:
 - name: app_type

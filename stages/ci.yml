@@ -27,7 +27,8 @@ stages:
   - ${{ if eq(parameters.app_type, 'dotnet') }}:
     - job: dotnet_ci
       displayName: Build and Test - dotnet
-      pool: { vmImage: $(vmImageName) }
+      pool:
+        vmImage: $(vmImageName)
       steps:
       - checkout: self
         fetchDepth: 0
@@ -38,7 +39,8 @@ stages:
   - ${{ if eq(parameters.app_type, 'node') }}:
     - job: node_ci
       displayName: Build and Test - node
-      pool: { vmImage: $(vmImageName) }
+      pool:
+        vmImage: $(vmImageName)
       steps:
       - checkout: self
         fetchDepth: 0

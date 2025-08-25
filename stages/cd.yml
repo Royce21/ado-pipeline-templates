@@ -11,10 +11,10 @@ parameters:
   default: drop
 - name: service_connection
   type: string
-  default: ""   # empty ⇒ AzureCLI@2 omitted
+  default: ""
 - name: var_groups
   type: object
-  default: []   # Azure DevOps Library variable groups (names)
+  default: []
 
 stages:
 - stage: Deploy_${{ parameters.env }}
@@ -38,18 +38,15 @@ stages:
           steps:
           - checkout: none
 
-          # Artifact from this run
           - download: current
             artifact: ${{ parameters.artifact_name }}
             displayName: Download artifact (current run)
 
           - script: |
-              echo "Artifact directory:"
-              echo "$(Pipeline.Workspace)/${{ parameters.artifact_name }}"
+              echo "Artifact at: $(Pipeline.Workspace)/${{ parameters.artifact_name }}"
               ls -la "$(Pipeline.Workspace)/${{ parameters.artifact_name }}" || true
             displayName: Inspect artifact
 
-          # Optional Azure step (only if service_connection is provided)
           - ${{ if ne(parameters.service_connection, '') }}:
             - task: AzureCLI@2
               displayName: Deploy (placeholder)
@@ -58,6 +55,5 @@ stages:
                 scriptType: bash
                 scriptLocation: inlineScript
                 inlineScript: |
-                  echo "Deploying to: ${{ parameters.env }}"
-                  echo "From artifact: $(Pipeline.Workspace)/${{ parameters.artifact_name }}"
-                  # TODO: add 'az' commands or script here
+                  echo "Deploying to ${{ parameters.env }}"
+                  echo "Using artifact at: $(Pipeline.Workspace)/${{ parameters.artifact_name }}"

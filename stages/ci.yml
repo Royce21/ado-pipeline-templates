@@ -3,7 +3,9 @@ parameters:
 - name: app_type
   type: string
   default: dotnet
-  values: [dotnet, node]
+  values:
+    - dotnet
+    - node
 - name: vmImage
   type: string
   default: ubuntu-latest
@@ -19,16 +21,14 @@ parameters:
 stages:
 - stage: CI
   displayName: Build and Test
-  variables:
-    vmImageName: ${{ parameters.vmImage }}
-    AppType: ${{ parameters.app_type }}
 
   jobs:
+  # -------- .NET --------
   - ${{ if eq(parameters.app_type, 'dotnet') }}:
     - job: dotnet_ci
-      displayName: Build and Test - dotnet
+      displayName: Build and Test (.NET)
       pool:
-        vmImage: $(vmImageName)
+        vmImage: ${{ parameters.vmImage }}
       steps:
       - checkout: self
         fetchDepth: 0
@@ -36,11 +36,12 @@ stages:
         parameters:
           artifact_name: ${{ parameters.artifact_name }}
 
+  # -------- Node --------
   - ${{ if eq(parameters.app_type, 'node') }}:
     - job: node_ci
-      displayName: Build and Test - node
+      displayName: Build and Test (Node)
       pool:
-        vmImage: $(vmImageName)
+        vmImage: ${{ parameters.vmImage }}
       steps:
       - checkout: self
         fetchDepth: 0

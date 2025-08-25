@@ -1,11 +1,10 @@
-﻿# ado-pipeline-templates/jobs/node-build-test.yml
+# ado-pipeline-templates/jobs/node-build-test.yml
 parameters:
 - name: artifact_name
   type: string
   default: drop
 
 steps:
-# Locate Node project (root package.json, else first one anywhere)
 - script: |
     set -e
     cd "$(Build.SourcesDirectory)"
@@ -15,7 +14,7 @@ steps:
     else
       FOUND="$(git ls-files 'package.json' | head -n1)"
       if [ -z "$FOUND" ]; then
-        echo "##vso[task.logissue type=warning]No package.json found under $(Build.SourcesDirectory); skipping Node CI."
+        echo "##vso[task.logissue type=warning]No package.json found; skipping Node CI."
         echo "##vso[task.setvariable variable=NodeFound]false"
         exit 0
       fi
@@ -24,15 +23,14 @@ steps:
     echo "Using Node project dir: $DIR"
     echo "##vso[task.setvariable variable=NodeFound]true"
     echo "##vso[task.setvariable variable=NodeProjDir]$DIR"
-  displayName: 'Locate Node project'
+  displayName: "Locate Node project"
 
-# If none found, no-op and succeed
 - script: 'echo "Skipping Node CI: no package.json in repo"'
-  displayName: 'Skip Node (no package.json)'
+  displayName: "Skip Node (no package.json)"
   condition: ne(variables['NodeFound'], 'true')
 
 - task: NodeTool@0
-  displayName: 'Use Node 20'
+  displayName: "Use Node 20"
   condition: eq(variables['NodeFound'], 'true')
   inputs:
     versionSpec: '20.x'
@@ -48,19 +46,19 @@ steps:
       echo "No package-lock.json found; running npm install"
       npm install
     fi
-  displayName: 'Install deps'
+  displayName: "Install deps"
   condition: eq(variables['NodeFound'], 'true')
 
 - script: |
     cd "$(NodeProjDir)"
     npm test --if-present
-  displayName: 'Test'
+  displayName: "Test"
   condition: eq(variables['NodeFound'], 'true')
 
 - script: |
     cd "$(NodeProjDir)"
     npm run build --if-present
-  displayName: 'Build'
+  displayName: "Build"
   condition: eq(variables['NodeFound'], 'true')
 
 - script: |
@@ -72,12 +70,12 @@ steps:
         cp -R "$(NodeProjDir)/$d"/. "$(Build.SourcesDirectory)/dist" || true
       fi
     done
-  displayName: 'Collect build output'
+  displayName: "Collect build output"
   condition: eq(variables['NodeFound'], 'true')
 
 - task: PublishPipelineArtifact@1
-  displayName: 'Publish artifact (drop)'
+  displayName: "Publish artifact (drop)"
   condition: eq(variables['NodeFound'], 'true')
   inputs:
     targetPath: '$(Build.SourcesDirectory)/dist'
-    artifact: 'drop'   # or: ${{ parameters.artifact_name }}
+    artifact: 'drop'

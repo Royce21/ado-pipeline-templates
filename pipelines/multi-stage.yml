@@ -1,14 +1,23 @@
 # ado-pipeline-templates/pipelines/multi-stage.yml
+# Entry-point template that consumer pipelines extend via:
+# extends:
+#   template: pipelines/multi-stage.yml@templates
+
 parameters:
 - name: app_type
   type: string
   default: dotnet
-  values: [dotnet, node]
+  values:
+    - dotnet
+    - node
 
 - name: env
   type: string
   default: dev
-  values: [dev, qa, prod]
+  values:
+    - dev
+    - qa
+    - prod
 
 - name: enable_deploy
   type: boolean
@@ -24,7 +33,7 @@ parameters:
 
 - name: service_connection
   type: string
-  default: ""
+  default: ""     # empty ⇒ AzureCLI@2 step omitted
 
 - name: path_filter
   type: object
@@ -34,10 +43,10 @@ parameters:
 
 - name: var_groups
   type: object
-  default: []
+  default: []     # e.g., ['app-qa', 'shared-secrets']
 
 stages:
-# -------- CI --------
+# ---------------- CI ----------------
 - template: ../stages/ci.yml
   parameters:
     app_type:      ${{ parameters.app_type }}
@@ -45,7 +54,10 @@ stages:
     artifact_name: ${{ parameters.artifact_name }}
     path_filter:   ${{ parameters.path_filter }}
 
-# -------- CD (only on main or release/*) --------
+# ---------------- CD (guarded) ----------------
+# Only include the Deploy stage if:
+#  - enable_deploy is true AND
+#  - the branch is main or release/*
 - ${{ if and(eq(parameters.enable_deploy, true),
              or(contains(variables['Build.SourceBranch'], '/main'),
                 contains(variables['Build.SourceBranch'], '/release/'))) }}:
@@ -56,4 +68,3 @@ stages:
       artifact_name:      ${{ parameters.artifact_name }}
       service_connection: ${{ parameters.service_connection }}
       var_groups:         ${{ parameters.var_groups }}
-

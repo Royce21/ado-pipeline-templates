@@ -11,16 +11,16 @@ parameters:
   default: drop
 - name: service_connection
   type: string
-  default: ''            # if empty, AzureCLI step is omitted
+  default: ""
 - name: var_groups
   type: object
-  default: []            # e.g., ['app-qa']
+  default: []
 
 stages:
 - stage: Deploy_${{ parameters.env }}
   displayName: "Deploy to ${{ parameters.env }}"
   dependsOn: CI
-  condition: succeeded()                # ← only one condition at stage level
+  condition: succeeded()
 
   variables:
   - ${{ each g in parameters.var_groups }}:
@@ -29,27 +29,23 @@ stages:
   jobs:
   - deployment: deploy_${{ parameters.env }}
     displayName: "Deploy (${{ parameters.env }})"
-    environment: ${{ parameters.env }}  # ADO Environment name (dev/qa/prod)
-    pool:
-      vmImage: ${{ parameters.vmImage }}
+    environment: ${{ parameters.env }}
+    pool: { vmImage: ${{ parameters.vmImage }} }
     strategy:
       runOnce:
         deploy:
           steps:
           - checkout: none
 
-          # Download artifact from the CURRENT run
           - download: current
             artifact: ${{ parameters.artifact_name }}
             displayName: "Download artifact (current run)"
 
-          # Inspect (handy while wiring up)
           - script: |
               echo "Artifact path:"
               ls -la "$(Pipeline.Workspace)/${{ parameters.artifact_name }}" || true
             displayName: "Inspect artifact"
 
-          # Only include Azure CLI step if a connection name is provided
           - ${{ if ne(parameters.service_connection, '') }}:
             - task: AzureCLI@2
               displayName: "Deploy (placeholder)"
@@ -60,4 +56,3 @@ stages:
                 inlineScript: |
                   echo "Deploying to ${{ parameters.env }}"
                   echo "From: $(Pipeline.Workspace)/${{ parameters.artifact_name }}"
-                  # TODO: add real az commands here

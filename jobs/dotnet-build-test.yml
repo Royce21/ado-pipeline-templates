@@ -6,11 +6,12 @@ parameters:
 
 steps:
 - task: UseDotNet@2
-  displayName: "Use .NET 8"
+  displayName: Use .NET 8
   inputs:
     packageType: sdk
     version: 8.x
 
+# Detect a .sln or .csproj
 - script: |
     set -e
     cd "$(Build.SourcesDirectory)"
@@ -27,14 +28,14 @@ steps:
     echo "##vso[task.setvariable variable=DotFound]true"
     echo "##vso[task.setvariable variable=DotProject]$(Build.SourcesDirectory)/$FOUND"
     echo "##vso[task.setvariable variable=DotProjDir]$(Build.SourcesDirectory)/$DIR"
-  displayName: "Locate .NET project/solution"
+  displayName: Locate .NET project/solution
 
 - script: 'echo "Skipping .NET CI: no .sln/.csproj in repo"'
-  displayName: "Skip .NET (no project)"
+  displayName: Skip .NET (no project)
   condition: ne(variables['DotFound'], 'true')
 
 - task: DotNetCoreCLI@2
-  displayName: "Restore"
+  displayName: Restore
   condition: eq(variables['DotFound'], 'true')
   inputs:
     command: restore
@@ -42,7 +43,7 @@ steps:
     workingDirectory: '$(DotProjDir)'
 
 - task: DotNetCoreCLI@2
-  displayName: "Build"
+  displayName: Build
   condition: eq(variables['DotFound'], 'true')
   inputs:
     command: build
@@ -51,7 +52,7 @@ steps:
     workingDirectory: '$(DotProjDir)'
 
 - task: DotNetCoreCLI@2
-  displayName: "Test"
+  displayName: Test
   condition: eq(variables['DotFound'], 'true')
   inputs:
     command: test
@@ -66,17 +67,18 @@ steps:
     if [[ "$(DotProject)" == *.sln ]]; then
       echo "Publishing all projects under $(DotProjDir)"
       find "$(DotProjDir)" -maxdepth 3 -type f -name '*.csproj' -print0 | while IFS= read -r -d '' P; do
+        echo "Publishing $P"
         dotnet publish "$P" --configuration Release --no-build -o "$(Build.SourcesDirectory)/dist"
       done
     else
       echo "Publishing $(DotProject)"
       dotnet publish "$(DotProject)" --configuration Release --no-build -o "$(Build.SourcesDirectory)/dist"
     fi
-  displayName: "Publish app to dist"
+  displayName: Publish app to dist
   condition: eq(variables['DotFound'], 'true')
 
 - task: PublishPipelineArtifact@1
-  displayName: "Publish artifact (drop)"
+  displayName: Publish artifact (drop)
   condition: eq(variables['DotFound'], 'true')
   inputs:
     targetPath: '$(Build.SourcesDirectory)/dist'

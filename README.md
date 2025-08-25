@@ -7,14 +7,10 @@
 - `jobs/*.yml` – language-specific jobs
 - `steps/*.yml` – reusable steps (add lint, code scan, publish tests)
 - Repo structure (pipelines/, stages/, jobs/, steps/)
-
-How to consume (the resources.repositories + extends snippet)
-
-Parameters table
-
-Versioning policy (tags + pinning)
-
-Upgrade steps (bump tag in consumers)
+- How to consume (the resources.repositories + extends snippet)
+- Parameters table
+- Versioning policy (tags + pinning)
+- Upgrade steps (bump tag in consumers)
 
 ## How to consume
 ```yaml

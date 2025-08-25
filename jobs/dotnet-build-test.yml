@@ -6,21 +6,17 @@ parameters:
 
 steps:
 - task: UseDotNet@2
-<<<<<<< HEAD
-  displayName: 'Use .NET 8'
+  displayName: "Use .NET 8"
   inputs:
-    packageType: 'sdk'
-    version: '8.x'
+    packageType: sdk
+    version: 8.x
 
-# Detect .sln or .csproj; SKIP (success) if none
 - script: |
     set -e
     cd "$(Build.SourcesDirectory)"
     echo "Repo root: $(pwd)"
     FOUND="$(git ls-files '*.sln' | head -n1)"
-    if [ -z "$FOUND" ]; then
-      FOUND="$(git ls-files '*.csproj' | head -n1)"
-    fi
+    if [ -z "$FOUND" ]; then FOUND="$(git ls-files '*.csproj' | head -n1)"; fi
     if [ -z "$FOUND" ]; then
       echo "##vso[task.logissue type=warning].NET solution/project not found; skipping .NET CI."
       echo "##vso[task.setvariable variable=DotFound]false"
@@ -31,84 +27,57 @@ steps:
     echo "##vso[task.setvariable variable=DotFound]true"
     echo "##vso[task.setvariable variable=DotProject]$(Build.SourcesDirectory)/$FOUND"
     echo "##vso[task.setvariable variable=DotProjDir]$(Build.SourcesDirectory)/$DIR"
-  displayName: 'Locate .NET project/solution'
+  displayName: "Locate .NET project/solution"
 
-# No-op if nothing found
 - script: 'echo "Skipping .NET CI: no .sln/.csproj in repo"'
-  displayName: 'Skip .NET (no project)'
+  displayName: "Skip .NET (no project)"
   condition: ne(variables['DotFound'], 'true')
 
 - task: DotNetCoreCLI@2
-  displayName: 'Restore'
+  displayName: "Restore"
   condition: eq(variables['DotFound'], 'true')
   inputs:
-    command: 'restore'
+    command: restore
     projects: '$(DotProject)'
     workingDirectory: '$(DotProjDir)'
 
 - task: DotNetCoreCLI@2
-  displayName: 'Build'
+  displayName: "Build"
   condition: eq(variables['DotFound'], 'true')
   inputs:
-    command: 'build'
+    command: build
     projects: '$(DotProject)'
     arguments: '--configuration Release --no-restore'
     workingDirectory: '$(DotProjDir)'
 
 - task: DotNetCoreCLI@2
-  displayName: 'Test'
+  displayName: "Test"
   condition: eq(variables['DotFound'], 'true')
   inputs:
-    command: 'test'
+    command: test
     projects: '**/*Tests/*.csproj'
     arguments: '--configuration Release --no-build --logger trx --results-directory $(Build.SourcesDirectory)/TestResults'
     publishTestResults: true
     workingDirectory: '$(Build.SourcesDirectory)'
 
-# ▼▼ PLACE YOUR SNIPPET HERE (replaces old publish blocks) ▼▼
 - script: |
     set -e
     mkdir -p "$(Build.SourcesDirectory)/dist"
-    # publish either the solution's projects or one project
     if [[ "$(DotProject)" == *.sln ]]; then
-      find "$(DotProjDir)" -maxdepth 3 -type f -name '*.csproj' -print0 | \
-      while IFS= read -r -d '' P; do
-        dotnet publish "$P" -c Release --no-build -o "$(Build.SourcesDirectory)/dist"
+      echo "Publishing all projects under $(DotProjDir)"
+      find "$(DotProjDir)" -maxdepth 3 -type f -name '*.csproj' -print0 | while IFS= read -r -d '' P; do
+        dotnet publish "$P" --configuration Release --no-build -o "$(Build.SourcesDirectory)/dist"
       done
     else
-      dotnet publish "$(DotProject)" -c Release --no-build -o "$(Build.SourcesDirectory)/dist"
+      echo "Publishing $(DotProject)"
+      dotnet publish "$(DotProject)" --configuration Release --no-build -o "$(Build.SourcesDirectory)/dist"
     fi
-  displayName: 'Publish to dist'
+  displayName: "Publish app to dist"
   condition: eq(variables['DotFound'], 'true')
 
 - task: PublishPipelineArtifact@1
-  displayName: 'Publish artifact (drop)'
+  displayName: "Publish artifact (drop)"
   condition: eq(variables['DotFound'], 'true')
   inputs:
     targetPath: '$(Build.SourcesDirectory)/dist'
-    artifact: 'drop'   # keep this 'drop' if your CD downloads 'drop'
-# ▲▲ END OF SNIPPET ▲▲
-=======
-  inputs: { packageType: 'sdk', version: '8.x' }
-
-- script: dotnet restore
-  displayName: Restore
-
-- script: dotnet build --configuration Release --no-restore
-  displayName: Build
-
-- script: dotnet test --configuration Release --no-build --logger trx --results-directory $(Build.SourcesDirectory)/TestResults
-  displayName: Test
-
-- task: PublishTestResults@2
-  inputs:
-    testResultsFormat: VSTest
-    testResultsFiles: '**/*.trx'
-    searchFolder: '$(Build.SourcesDirectory)/TestResults'
-    failTaskOnFailedTests: true
-
-- publish: $(Build.SourcesDirectory)/dist
-  artifact: ${{ parameters.artifact_name }}
-  displayName: Publish artifact
-  condition: exists('dist')
->>>>>>> cf3ccb4 (chore: no-op pipeline; update templates)
+    artifact: 'drop'

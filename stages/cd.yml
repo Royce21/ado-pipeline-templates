@@ -11,16 +11,23 @@ parameters:
   default: drop
 - name: service_connection
   type: string
-  default: ""
+  default: ""     # empty ⇒ AzureCLI omitted
 - name: var_groups
   type: object
-  default: []
+  default: []     # e.g., ['app-qa']
 
 stages:
 - stage: Deploy_${{ parameters.env }}
   displayName: Deploy to ${{ parameters.env }}
   dependsOn: CI
-  condition: succeeded()
+  # Run only on main or release/* branches
+  condition: and(
+              succeeded(),
+              or(
+                eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+                contains(variables['Build.SourceBranch'], 'refs/heads/release/')
+              )
+            )
 
   variables:
   - ${{ each g in parameters.var_groups }}:
@@ -43,7 +50,8 @@ stages:
             displayName: Download artifact (current run)
 
           - script: |
-              echo "Artifact at: $(Pipeline.Workspace)/${{ parameters.artifact_name }}"
+              echo "Artifact directory:"
+              echo "$(Pipeline.Workspace)/${{ parameters.artifact_name }}"
               ls -la "$(Pipeline.Workspace)/${{ parameters.artifact_name }}" || true
             displayName: Inspect artifact
 
@@ -55,5 +63,6 @@ stages:
                 scriptType: bash
                 scriptLocation: inlineScript
                 inlineScript: |
-                  echo "Deploying to ${{ parameters.env }}"
-                  echo "Using artifact at: $(Pipeline.Workspace)/${{ parameters.artifact_name }}"
+                  echo "Deploying to: ${{ parameters.env }}"
+                  echo "From artifact: $(Pipeline.Workspace)/${{ parameters.artifact_name }}"
+                  # TODO: add 'az' commands here

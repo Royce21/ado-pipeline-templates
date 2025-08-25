@@ -45,14 +45,12 @@ stages:
     artifact_name: ${{ parameters.artifact_name }}
     path_filter:   ${{ parameters.path_filter }}
 
-# -------- CD (enable + branch guard) --------
-# enable_deploy must be true AND branch must be main or release/*
+# -------- CD (only controlled by enable_deploy; branch guard lives in cd.yml) --------
 - ${{ if eq(parameters.enable_deploy, true) }}:
-  - ${{ if or(eq(variables['Build.SourceBranchName'], 'main'), startsWith(variables['Build.SourceBranchName'], 'release/')) }}:
-    - template: ../stages/cd.yml
-      parameters:
-        env:                ${{ parameters.env }}
-        vmImage:            ${{ parameters.vmImage }}
-        artifact_name:      ${{ parameters.artifact_name }}
-        service_connection: ${{ parameters.service_connection }}
-        var_groups:         ${{ parameters.var_groups }}
+  - template: ../stages/cd.yml
+    parameters:
+      env:                ${{ parameters.env }}
+      vmImage:            ${{ parameters.vmImage }}
+      artifact_name:      ${{ parameters.artifact_name }}
+      service_connection: ${{ parameters.service_connection }}
+      var_groups:         ${{ parameters.var_groups }}

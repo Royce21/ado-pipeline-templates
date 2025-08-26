@@ -45,12 +45,13 @@ stages:
     artifact_name: ${{ parameters.artifact_name }}
     path_filter:   ${{ parameters.path_filter }}
 
-# -------- CD (always included; gated inside cd.yml) --------
+# -------- CD --------
+# Always include the CD template and do gating INSIDE cd.yml via a stage condition.
 - template: ../stages/cd.yml
   parameters:
-    enable_deploy:     ${{ parameters.enable_deploy }}
-    env:               ${{ parameters.env }}
-    vmImage:           ${{ parameters.vmImage }}
-    artifact_name:     ${{ parameters.artifact_name }}
-    service_connection:${{ parameters.service_connection }}
-    var_groups:        ${{ parameters.var_groups }}
+    enable_deploy:      ${{ parameters.enable_deploy }}
+    env:                ${{ parameters.env }}
+    vmImage:            ${{ parameters.vmImage }}
+    artifact_name:      ${{ parameters.artifact_name }}
+    service_connection: ${{ parameters.service_connection }}
+    var_groups:         ${{ parameters.var_groups }}

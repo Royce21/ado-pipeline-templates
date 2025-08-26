@@ -14,10 +14,10 @@ parameters:
   default: drop
 - name: service_connection
   type: string
-  default: ""     # empty ⇒ AzureCLI omitted
+  default: ""
 - name: var_groups
   type: object
-  default: []     # e.g., ['app-qa']
+  default: []
 
 stages:
 - stage: Deploy_${{ parameters.env }}
